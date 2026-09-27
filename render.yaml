@@ -10,3 +10,6 @@ services:
         sync: false
       - key: IVA_RATE
         value: "0.16"
+      - key: TZ
+        value: "America/Bogota"
+
