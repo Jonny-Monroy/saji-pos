@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupo SAJI Bogotá SAS - POS Embalaje y Desechables</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; height: 100vh; overflow: hidden; }
+        .header { background: #004c91; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+        .logo-box img { width: 100%; height: 100%; object-fit: contain; }
+        .header h1 { margin: 0; font-size: 1.35rem; font-weight: 600; letter-spacing: 0.5px; }
+        .clock { font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .sound-toggle { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .sound-toggle:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .sound-toggle.muted { opacity: 0.5; }
+        .history-btn { padding: 8px 16px; background: #ffc220; color: #004c91; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+        .history-btn:hover { background: #ffb300; }
+        .main-container { display: flex; height: calc(100vh - 64px); overflow: hidden; }
+        .left-panel { width: 55%; display: flex; flex-direction: column; border-right: 1px solid #d0d7de; background: #fff; }
+        .search-bar { padding: 16px 20px; border-bottom: 1px solid #e1e4e8; background: #f8f9fa; display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 10px 14px; border: 2px solid #d0d7de; border-radius: 6px; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .search-input:focus { border-color: #004c91; }
+        .btn-search { padding: 10px 22px; background: #004c91; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-search:hover { background: #003a70; }
+        .product-grid { flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; align-content: start; }
+        .product-card { background: #fff; border: 1px solid #e1e4e8; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .product-card:hover { border-color: #004c91; box-shadow: 0 4px 12px rgba(0,76,145,0.12); transform: translateY(-2px); }
+        .product-card:active { transform: translateY(0); }
+        .product-emoji { font-size: 2rem; text-align: center; margin-bottom: 4px; }
+        .product-barcode { font-size: 0.75rem; color: #888; font-family: monospace; }
+        .product-name { font-weight: 700; color: #1a1a1a; font-size: 1rem; line-height: 1.2; }
+        .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+        .product-stock { font-size: 0.85rem; color: #555; }
+        .product-stock b { color: #2e7d32; }
+        .product-stock b.low { color: #c62828; }
+        .category-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cat-Vasos { background: #e1f5fe; color: #0277bd; border: 1px solid #4fc3f7; }
+        .cat-Platos { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .cat-Cubiertos { background: #f3e5f5; color: #7b1fa2; border: 1px solid #ce93d8; }
+        .cat-Contenedores { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .cat-Bolsas { background: #fce4ec; color: #c2185b; border: 1px solid #f48fb1; }
+        .cat-Embalaje { background: #e0f2f1; color: #00695c; border: 1px solid #80cbc4; }
+        .product-card.cat-Vasos { border-top: 3px solid #03a9f4; }
+        .product-card.cat-Platos { border-top: 3px solid #ff9800; }
+        .product-card.cat-Cubiertos { border-top: 3px solid #9c27b0; }
+        .product-card.cat-Contenedores { border-top: 3px solid #4caf50; }
+        .product-card.cat-Bolsas { border-top: 3px solid #e91e63; }
+        .product-card.cat-Embalaje { border-top: 3px solid #009688; }
+        .product-price { font-size: 1.1rem; font-weight: 800; color: #004c91; }
+        .no-results { grid-column: 1 / -1; text-align: center; color: #888; padding: 40px; font-size: 1rem; }
+        .right-panel { width: 45%; display: flex; flex-direction: column; background: #f8f9fa; }
+        .cart-header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e1e4e8; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h2 { margin: 0; font-size: 1.15rem; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+        .cart-count { background: #004c91; color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+        .empty-cart { text-align: center; color: #888; padding: 40px 20px; font-size: 1rem; }
+        .empty-cart-icon { font-size: 2.5rem; margin-bottom: 10px; opacity: 0.4; }
+        .cart-item { background: #fff; border: 1px solid #e1e4e8; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .item-number { width: 22px; height: 22px; background: #e3f2fd; color: #004c91; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+        .item-info { flex: 1; min-width: 0; }
+        .item-name { font-weight: 600; color: #1a1a1a; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-unit-price { font-size: 0.8rem; color: #888; }
+        .qty-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: #e3f2fd; color: #004c91; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .qty-btn:hover { background: #bbdefb; }
+        .qty-value { min-width: 24px; text-align: center; font-weight: 700; font-size: 1rem; }
+        .item-total { min-width: 70px; text-align: right; font-weight: 700; color: #004c91; font-size: 0.95rem; flex-shrink: 0; }
+        .del-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: #ffebee; color: #c62828; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; margin-left: auto; }
+        .del-btn:hover { background: #ffcdd2; }
+        .totals-section { background: #fff; border-top: 2px solid #e1e4e8; padding: 16px 20px; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.95rem; color: #555; }
+        .total-row span:last-child { font-weight: 600; color: #1a1a1a; }
+        .discount-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .discount-input { width: 70px; padding: 6px 10px; border: 1px solid #d0d7de; border-radius: 4px; text-align: right; font-size: 0.95rem; }
+        .discount-display { color: #d32f2f !important; }
+        .grand-total { display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px dashed #d0d7de; }
+        .grand-total-label { font-size: 1.25rem; font-weight: 700; color: #1a1a1a; }
+        .grand-total-value { font-size: 1.4rem; font-weight: 800; color: #004c91; }
+        .action-buttons { padding: 14px 20px; background: #fff; border-top: 1px solid #e1e4e8; display: flex; gap: 12px; }
+        .btn-new-ticket { flex: 1; padding: 12px; background: #6c757d; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-new-ticket:hover { background: #5a6268; }
+        .btn-cobrar { flex: 1.3; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 6px rgba(40,167,69,0.3); }
+        .btn-cobrar:hover { background: #218838; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; width: 420px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; animation: modalIn 0.25s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-header { background: #004c91; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 1.2rem; }
+        .modal-close { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1; }
+        .modal-body { padding: 24px 20px; }
+        .total-box { text-align: center; margin-bottom: 20px; padding: 14px; background: #f0f8ff; border-radius: 8px; border: 1px solid #b3d9ff; }
+        .total-box-label { font-size: 0.9rem; color: #555; margin-bottom: 4px; }
+        .total-box-value { font-size: 2rem; font-weight: 800; color: #004c91; }
+        .cash-label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; font-size: 0.95rem; }
+        .cash-input { width: 100%; padding: 12px 14px; border: 2px solid #d0d7de; border-radius: 6px; font-size: 1.3rem; font-weight: 600; text-align: center; outline: none; margin-bottom: 16px; box-sizing: border-box; }
+        .cash-input:focus { border-color: #004c91; }
+        .change-box { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: #e8f5e9; border-radius: 8px; border: 1px solid #a5d6a7; }
+        .change-label { font-weight: 600; color: #2e7d32; }
+        .change-value { font-size: 1.5rem; font-weight: 800; color: #2e7d32; }
+        .change-value.negative { color: #c62828; }
+        .modal-footer { padding: 16px 20px; background: #f8f9fa; border-top: 1px solid #e1e4e8; display: flex; gap: 10px; }
+        .btn-cancel { flex: 1; padding: 12px; background: #6c757d; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn-confirm { flex: 1.5; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+        .receipt-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
+        .receipt-overlay.active { display: flex; }
+        .receipt-box { background: #fff; border-radius: 2px; width: 320px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Courier New', Courier, 'Lucida Console', monospace; }
+        .receipt-content { padding: 16px 12px; background: #fff; }
+        .receipt-header { text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #999; }
+        .receipt-title { font-size: 1.1rem; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .receipt-info { font-size: 0.75rem; color: #333; line-height: 1.4; }
+        .receipt-meta { border-bottom: 1px dashed #999; padding: 8px 0; margin-bottom: 12px; font-size: 0.8rem; color: #333; }
+        .receipt-meta-row { display: flex; justify-content: space-between; }
+        .receipt-items { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #999; }
+        .receipt-item { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.82rem; color: #222; }
+        .receipt-totals { padding-top: 8px; font-size: 0.85rem; }
+        .receipt-total-row { display: flex; justify-content: space-between; margin-bottom: 3px; color: #333; }
+        .receipt-grand-total { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.3rem; border-top: 2px dashed #999; padding-top: 8px; margin-top: 8px; margin-bottom: 6px; }
+        .receipt-discount { color: #c62828; }
+        .receipt-footer { text-align: center; margin-top: 16px; padding-top: 10px; border-top: 1px dashed #999; font-size: 0.78rem; color: #555; }
+        .receipt-barcode { font-family: 'Courier New', monospace; font-size: 1.1rem; letter-spacing: 2px; margin-top: 6px; }
+        .receipt-close { padding: 14px 16px; background: #f0f0f0; border-top: 2px dashed #bbb; text-align: center; }
+        .btn-close-receipt { padding: 10px 32px; background: #004c91; color: #fff; border: none; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Segoe UI', sans-serif; }
+        .btn-close-receipt:hover { background: #003a70; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a1a; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; font-weight: 500; opacity: 0; transition: all 0.3s ease; z-index: 300; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .admin-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 150; align-items: center; justify-content: center; }
+        .admin-overlay.active { display: flex; }
+        .admin-box { background: #fff; border-radius: 12px; width: 860px; max-width: 96%; max-height: 90vh; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; animation: modalIn 0.25s ease-out; display: flex; flex-direction: column; }
+        .admin-header { background: #1a1a2e; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .admin-header h3 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        .admin-close { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1; }
+        .admin-tabs { display: flex; background: #f0f4f8; border-bottom: 1px solid #e1e4e8; }
+        .admin-tab { flex: 1; padding: 12px; border: none; background: transparent; font-size: 0.95rem; font-weight: 700; color: #555; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.15s; font-family: 'Segoe UI', sans-serif; }
+        .admin-tab:hover { background: #e3edf5; }
+        .admin-tab.active { color: #004c91; border-bottom-color: #004c91; background: #fff; }
+        .admin-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+        .range-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+        .range-chip { padding: 7px 16px; border-radius: 999px; border: 1px solid #c6d3e0; background: #fff; color: #004c91; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+        .range-chip:hover { background: #e3f2fd; }
+        .range-chip.active { background: #004c91; color: #fff; border-color: #004c91; }
+        .date-picker { padding: 6px 10px; border: 1px solid #c6d3e0; border-radius: 6px; font-size: 0.9rem; font-family: 'Segoe UI', sans-serif; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .admin-table th { background: #e3f2fd; color: #004c91; padding: 10px 8px; text-align: left; font-weight: 700; border-bottom: 2px solid #004c91; white-space: nowrap; }
+        .admin-table td { padding: 8px; border-bottom: 1px solid #e1e4e8; color: #333; vertical-align: middle; }
+        .admin-table tr:hover td { background: #f5faff; }
+        .admin-table .td-num { text-align: right; font-variant-numeric: tabular-nums; }
+        .admin-empty { text-align: center; color: #888; padding: 40px; font-size: 1rem; }
+        .admin-summary { display: flex; justify-content: space-between; align-items: center; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 8px; padding: 12px 16px; margin-top: 14px; flex-wrap: wrap; gap: 8px; }
+        .admin-summary-label { font-size: 1rem; font-weight: 700; color: #1a1a1a; }
+        .admin-summary-value { font-size: 1.3rem; font-weight: 800; color: #004c91; }
+        .admin-footer { padding: 14px 20px; background: #f8f9fa; border-top: 1px solid #e1e4e8; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .btn-admin { padding: 10px 22px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; font-family: 'Segoe UI', sans-serif; }
+        .btn-admin-blue { background: #004c91; color: #fff; }
+        .btn-admin-blue:hover { background: #003a70; }
+        .btn-admin-red { background: #c62828; color: #fff; }
+        .btn-admin-red:hover { background: #b71c1c; }
+        .btn-admin-green { background: #2e7d32; color: #fff; }
+        .btn-admin-green:hover { background: #1b5e20; }
+        .btn-admin-gray { background: #6c757d; color: #fff; }
+        .btn-admin-gray:hover { background: #5a6268; }
+        .btn-logout { background: #c62828; color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin-right: 10px; }
+        .btn-logout:hover { background: #b71c1c; }
+        .login-box { background: #fff; border-radius: 12px; width: 360px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; animation: modalIn 0.25s ease-out; }
+        .login-body { padding: 24px 24px 28px; }
+        .login-input { width: 100%; padding: 11px 14px; border: 2px solid #d0d7de; border-radius: 6px; font-size: 1rem; outline: none; margin-bottom: 14px; box-sizing: border-box; }
+        .login-input:focus { border-color: #004c91; }
+        .login-error { color: #c62828; font-size: 0.85rem; margin-bottom: 10px; text-align: center; display: none; }
+        .login-error.show { display: block; }
+        .btn-login { width: 100%; padding: 12px; background: #004c91; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .btn-login:hover { background: #003a70; }
+        .pform { background: #f8fbff; border: 1px solid #d0e2f5; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+        .pform-title { font-size: 0.95rem; font-weight: 700; color: #004c91; margin-bottom: 10px; }
+        .pform-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .pform-grid label { display: block; font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 3px; }
+        .pform-grid input, .pform-grid select { width: 100%; padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        .pform-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .stock-input { width: 76px; padding: 5px 8px; border: 1px solid #d0d7de; border-radius: 4px; text-align: right; font-size: 0.9rem; }
+        .btn-sm { padding: 5px 12px; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+        .btn-sm-blue { background: #004c91; color: #fff; }
+        .btn-sm-yellow { background: #ffc220; color: #004c91; }
+        .btn-sm-red { background: #ffebee; color: #c62828; }
+        .btn-sm-red:hover { background: #ffcdd2; }
+        .server-warning { display: none; position: fixed; top: 64px; left: 0; right: 0; background: #f8d7da; color: #842029; padding: 12px 24px; text-align: center; font-weight: 600; font-size: 0.95rem; border-bottom: 2px solid #dc3545; z-index: 250; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .server-warning.show { display: block; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        /* ===== LOGIN SCREEN (full) ===== */
+        .login-screen { display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #003a70 0%, #004c91 55%, #0a6cbf 100%); z-index: 500; align-items: center; justify-content: center; }
+        .login-screen.active { display: flex; }
+        .login-card { background: #fff; border-radius: 16px; width: 380px; max-width: 92%; padding: 36px 32px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); text-align: center; animation: modalIn 0.3s ease-out; }
+        .login-card img { width: 96px; height: 96px; object-fit: contain; margin-bottom: 10px; }
+        .login-card h2 { margin: 0 0 4px; font-size: 1.3rem; color: #004c91; }
+        .login-card p { margin: 0 0 20px; color: #777; font-size: 0.9rem; }
+        .login-card .cash-label { text-align: left; }
+        .user-chip { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 7px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .user-chip .role-badge { background: #ffc220; color: #004c91; font-size: 0.7rem; font-weight: 800; padding: 1px 8px; border-radius: 10px; text-transform: uppercase; }
+        .btn-header-logout { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btn-header-logout:hover { background: #c62828; border-color: #c62828; }
+        #appShell { display: none; }
+        #appShell.active { display: block; }
+        .usr-form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-bottom: 12px; }
+        .usr-form-row input, .usr-form-row select { padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        .role-tag { font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; }
+        .role-admin { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .role-vendedor { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    </style>
+</head>
+<body>
+
+    <!-- ===================== LOGIN SCREEN ===================== -->
+    <div class="login-screen active" id="loginScreen">
+        <div class="login-card">
+            <img src="SAJI_GROUP.png" alt="Grupo SAJI Bogotá SAS">
+            <h2>Grupo SAJI Bogotá SAS</h2>
+            <p>Sistema POS — Embalaje y Desechables</p>
+            <label class="cash-label">Usuario</label>
+            <input id="loginUser" type="text" class="login-input" placeholder="Usuario" autocomplete="off">
+            <label class="cash-label">Contraseña</label>
+            <input id="loginPass" type="password" class="login-input" placeholder="Contraseña">
+            <div class="login-error" id="loginError">Usuario o contraseña incorrectos</div>
+            <button class="btn-login" onclick="doLogin()">🔓 Iniciar Sesión</button>
+        </div>
+    </div>
+
+    <div id="appShell">
+
+    <!-- ===================== SERVER WARNING ===================== -->
+    <div class="server-warning" id="serverWarning">
+        ⚠️ Sin conexión con el servidor. Verifique que el sistema esté encendido.
+    </div>
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo-box"><img src="SAJI_GROUP.png" alt="Grupo SAJI Bogotá SAS"></div>
+            <h1>Grupo SAJI Bogotá SAS</h1>
+        </div>
+        <div class="header-actions">
+            <span class="user-chip" id="userChip">👤 <span id="userChipName">—</span> <span class="role-badge" id="userChipRole"></span></span>
+            <button class="history-btn" id="adminBtn" onclick="openAdminAccess()" style="display:none;">🛠️ Panel Admin</button>
+            <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="Activar/Desactivar sonidos">🔊</button>
+            <button class="btn-header-logout" onclick="doLogout()" title="Cerrar sesión">⏻</button>
+            <div class="clock" id="clock">--:--:--</div>
+        </div>
+    </header>
+
+    <!-- ===================== MAIN BODY ===================== -->
+    <div class="main-container">
+
+        <!-- LEFT PANEL: PRODUCTS (55%) -->
+        <div class="left-panel">
+            <div class="search-bar">
+                <input id="searchInput" type="text" class="search-input" placeholder="Buscar producto (F1) ...">
+                <select id="categoryFilter" class="search-input" style="flex:0.4; min-width:150px; cursor:pointer;" onchange="filterByCategory()">
+                    <option value="">📁 Todas las Categorías</option>
+                    <option value="Vasos">🥤 Vasos</option>
+                    <option value="Platos">🍽️ Platos</option>
+                    <option value="Cubiertos">🍴 Cubiertos</option>
+                    <option value="Contenedores">🥡 Contenedores</option>
+                    <option value="Bolsas">🛍️ Bolsas</option>
+                    <option value="Embalaje">📦 Embalaje</option>
+                </select>
+                <button class="btn-search" onclick="searchProducts()">Buscar</button>
+            </div>
+            <div class="product-grid" id="productGrid">
+                <!-- Products injected by JS -->
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: CART (45%) -->
+        <div class="right-panel">
+            <div class="cart-header">
+                <h2>🛒 Carrito de Compras</h2>
+                <span class="cart-count" id="cartCount">0 items</span>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart" id="emptyCartMsg">
+                    <div class="empty-cart-icon">🛒</div>
+                    El carrito está vacío.<br>Busque y agregue productos.
+                </div>
+            </div>
+
+            <!-- TOTALS -->
+            <div class="totals-section">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotalDisplay">$0.00</span>
+                </div>
+                <div class="discount-row">
+                    <span style="font-size:0.95rem; color:#555;">Descuento (%):</span>
+                    <input id="discountInput" type="number" min="0" max="100" value="0" class="discount-input" onchange="updateTotals()">
+                </div>
+                <div class="total-row">
+                    <span>Descuento:</span>
+                    <span id="discountDisplay" class="discount-display">-$0.00</span>
+                </div>
+                <div class="total-row">
+                    <span>Subtotal con Descuento:</span>
+                    <span id="subtotalAfterDiscountDisplay">$0.00</span>
+                </div>
+                <div class="total-row">
+                    <span id="ivaLabel">IVA (16%):</span>
+                    <span id="ivaDisplay">$0.00</span>
+                </div>
+                <div class="grand-total">
+                    <span class="grand-total-label">TOTAL:</span>
+                    <span class="grand-total-value" id="totalDisplay">$0.00</span>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="action-buttons">
+                <button class="btn-new-ticket" onclick="newTicket()">🔄 Nuevo Ticket (F3)</button>
+                <button class="btn-cobrar" onclick="openPayModal()">💵 Cobrar (F2)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== PAYMENT MODAL ===================== -->
+    <div class="modal-overlay" id="payModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>💵 Procesar Pago</h3>
+                <button class="modal-close" onclick="closePayModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="total-box">
+                    <div class="total-box-label">Total a Pagar</div>
+                    <div class="total-box-value" id="modalTotal">$0.00</div>
+                </div>
+                <label class="cash-label">Efectivo Recibido ($)</label>
+                <input id="cashInput" type="number" step="0.01" min="0" placeholder="0.00" class="cash-input" oninput="calculateChange()">
+                <div class="change-box">
+                    <span class="change-label">Cambio:</span>
+                    <span class="change-value" id="changeDisplay">$0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closePayModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="processPayment()">✓ Confirmar Pago</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== RECEIPT MODAL ===================== -->
+    <div class="receipt-overlay" id="receiptModal">
+        <div class="receipt-box">
+            <div class="receipt-content" id="receiptContent">
+                <!-- Receipt injected by JS -->
+            </div>
+            <div class="receipt-close">
+                <button class="btn-close-receipt" onclick="printReceipt()" style="background:#2e7d32; margin-bottom:8px;">🖨️ Imprimir Ticket</button>
+                <button class="btn-close-receipt" onclick="closeReceipt()">✓ Cerrar Ticket</button>
+            </div>
+        </div>
+    </div>
+    <!-- ===================== ADMIN PANEL ===================== -->
+    <div class="admin-overlay" id="adminModal">
+        <div class="admin-box">
+            <div class="admin-header">
+                <h3>🛠️ Panel de Administrador</h3>
+                <div>
+                    <button class="btn-logout" onclick="doLogout()">🔒 Cerrar Sesión</button>
+                    <button class="admin-close" onclick="closeAdminPanel()">&times;</button>
+                </div>
+            </div>
+            <div class="admin-tabs">
+                <button class="admin-tab active" id="tabHistory" onclick="showAdminTab('history')">📊 Historial</button>
+                <button class="admin-tab" id="tabInventory" onclick="showAdminTab('inventory')">📦 Inventario</button>
+                <button class="admin-tab" id="tabProducts" onclick="showAdminTab('products')">🏷️ Productos</button>
+                <button class="admin-tab" id="tabConfig" onclick="showAdminTab('config')">⚙️ Configuración</button>
+            </div>
+            <div class="admin-body">
+
+                <!-- ===== TAB: HISTORIAL ===== -->
+                <div class="admin-section active" id="sectionHistory">
+                    <div class="range-bar">
+                        <button class="range-chip active" id="chipDay" onclick="setRange('day')">Hoy</button>
+                        <button class="range-chip" id="chipWeek" onclick="setRange('week')">Esta Semana</button>
+                        <button class="range-chip" id="chipMonth" onclick="setRange('month')">Este Mes</button>
+                        <button class="range-chip" id="chipYear" onclick="setRange('year')">Este Año</button>
+                        <button class="range-chip" id="chipAll" onclick="setRange('all')">Todo</button>
+                        <input type="date" class="date-picker" id="historyDate" onchange="setRange('date')">
+                    </div>
+                    <div id="historyBody"></div>
+                    <div class="admin-summary">
+                        <span class="admin-summary-label" id="historySummaryLabel">Total Vendido (Hoy):</span>
+                        <span class="admin-summary-value" id="historyDayTotal">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- ===== TAB: INVENTARIO ===== -->
+                <div class="admin-section" id="sectionInventory">
+                    <div id="inventoryBody"></div>
+                </div>
+
+                <!-- ===== TAB: PRODUCTOS ===== -->
+                <div class="admin-section" id="sectionProducts">
+                    <div class="pform">
+                        <div class="pform-title" id="pformTitle">➕ Agregar Producto Nuevo</div>
+                        <div class="pform-grid">
+                            <div>
+                                <label>Nombre *</label>
+                                <input id="pName" type="text" placeholder="Ej. Vaso Térmico 8oz">
+                            </div>
+                            <div>
+                                <label>Categoría *</label>
+                                <select id="pCategory">
+                                    <option value="Vasos">Vasos</option>
+                                    <option value="Platos">Platos</option>
+                                    <option value="Cubiertos">Cubiertos</option>
+                                    <option value="Contenedores">Contenedores</option>
+                                    <option value="Bolsas">Bolsas</option>
+                                    <option value="Embalaje">Embalaje</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Precio ($) *</label>
+                                <input id="pPrice" type="number" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label>Stock *</label>
+                                <input id="pStock" type="number" min="0" placeholder="0">
+                            </div>
+                            <div>
+                                <label>Emoji (opcional)</label>
+                                <input id="pEmoji" type="text" placeholder="📦" maxlength="4">
+                            </div>
+                        </div>
+                        <div class="pform-actions">
+                            <button class="btn-admin btn-admin-green" onclick="saveProduct()">💾 Guardar Producto</button>
+                            <button class="btn-admin btn-admin-gray" id="pCancelEdit" style="display:none;" onclick="cancelEditProduct()">Cancelar Edición</button>
+                        </div>
+                    </div>
+                    <div id="productsBody"></div>
+                </div>
+
+                <!-- ===== TAB: CONFIGURACIÓN ===== -->
+                <div class="admin-section" id="sectionConfig">
+                    <div class="pform">
+                        <div class="pform-title">🔑 Cambiar Mi Contraseña</div>
+                        <div class="pform-grid">
+                            <div>
+                                <label>Contraseña Actual</label>
+                                <input id="cfgCurrentPass" type="password" placeholder="Contraseña actual">
+                            </div>
+                            <div>
+                                <label>Nueva Contraseña</label>
+                                <input id="cfgNewPass" type="password" placeholder="Nueva contraseña (mín. 4)">
+                            </div>
+                        </div>
+                        <div class="pform-actions">
+                            <button class="btn-admin btn-admin-blue" onclick="changeAdminPassword()">Cambiar Contraseña</button>
+                        </div>
+                    </div>
+                    <div class="pform">
+                        <div class="pform-title">👥 Usuarios del Sistema</div>
+                        <div class="usr-form-row">
+                            <input id="nuName" type="text" placeholder="usuario" autocomplete="off">
+                            <input id="nuPass" type="text" placeholder="contraseña (mín. 4)" autocomplete="off">
+                            <select id="nuRole">
+                                <option value="vendedor">Vendedor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="pform-actions" style="margin-top:0; margin-bottom:12px;">
+                            <button class="btn-admin btn-admin-green" onclick="createUser()">➕ Crear Usuario</button>
+                        </div>
+                        <div id="usersBody"></div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="admin-footer">
+                <button class="btn-admin btn-admin-red" onclick="clearHistory()">🗑️ Borrar Historial</button>
+                <button class="btn-admin btn-admin-green" onclick="exportToCSV()">📥 Exportar a Excel (CSV)</button>
+                <button class="btn-admin btn-admin-blue" onclick="closeAdminPanel()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TOAST ===================== -->
+    <div class="toast" id="toast"></div>
+
+    </div><!-- /appShell -->
+
+    <script>
+        // ===================== AUDIO ENGINE (Web Audio API) =====================
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(frequency, duration, type, volume) {
+            if (!soundEnabled || !audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type || 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(volume || 0.15, audioCtx.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration + 0.05);
+        }
+
+        function soundBeep() { playTone(800, 0.1, 'sine', 0.12); }
+        function soundDing() {
+            playTone(1200, 0.2, 'sine', 0.15);
+            setTimeout(function() { playTone(900, 0.25, 'sine', 0.12); }, 120);
+        }
+        function soundError() {
+            playTone(200, 0.15, 'square', 0.1);
+            setTimeout(function() { playTone(180, 0.15, 'square', 0.1); }, 100);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                btn.textContent = '🔊';
+                btn.classList.remove('muted');
+                btn.title = 'Desactivar sonidos';
+                initAudio();
+                playTone(600, 0.08, 'sine', 0.1);
+            } else {
+                btn.textContent = '🔇';
+                btn.classList.add('muted');
+                btn.title = 'Activar sonidos';
+            }
+        }
+
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('keydown', initAudio, { once: true });
+
+        // ===================== API CLIENT =====================
+        let IVA_RATE = 0.16;
+        let currentUser = null; // { user, pass, role }
+
+        async function api(path, options) {
+            const opts = options || {};
+            opts.headers = opts.headers || {};
+            if (currentUser) {
+                opts.headers['x-admin-user'] = currentUser.user;
+                opts.headers['x-admin-pass'] = currentUser.pass;
+            }
+            if (opts.body && typeof opts.body !== 'string') {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(opts.body);
+            }
+            const res = await fetch(path, opts);
+            const data = await res.json().catch(function() { return {}; });
+            if (!res.ok) {
+                throw new Error(data.error || 'Error del servidor (' + res.status + ')');
+            }
+            return data;
+        }
+
+        function isAdmin() { return currentUser && currentUser.role === 'admin'; }
+
+        function showServerWarning() { document.getElementById('serverWarning').classList.add('show'); }
+        function hideServerWarning() { document.getElementById('serverWarning').classList.remove('show'); }
+
+        // ===================== DATE HELPERS =====================
+        function toLocalISO(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function startOfWeek(d) {
+            const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const dow = (x.getDay() + 6) % 7; // lunes = 0
+            x.setDate(x.getDate() - dow);
+            return x;
+        }
+
+        // ===================== APP STATE =====================
+        let products = [];
+        let cart = [];
+        let currentRange = 'day';
+
+        // ===================== CLOCK =====================
+        function updateClock() {
+            const now = new Date();
+            const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('clock').textContent = now.toLocaleDateString('es-MX', opts);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ===================== PRODUCT GRID =====================
+        async function loadProducts() {
+            try {
+                products = await api('/api/products');
+                hideServerWarning();
+            } catch (e) {
+                console.error(e);
+                showServerWarning();
+                showToast('⚠️ ' + e.message);
+            }
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('productGrid');
+            if (list.length === 0) {
+                grid.innerHTML = '<div class="no-results">No se encontraron productos.</div>';
+                return;
+            }
+            grid.innerHTML = list.map(function(p) {
+                return '<div class="product-card cat-' + p.category + '" onclick="addToCart(\'' + p.barcode + '\')">' +
+                    '<span class="category-badge cat-' + p.category + '">' + p.category + '</span>' +
+                    '<div class="product-emoji">' + p.emoji + '</div>' +
+                    '<div class="product-barcode">' + p.barcode + '</div>' +
+                    '<div class="product-name">' + p.name + '</div>' +
+                    '<div class="product-footer">' +
+                        '<span class="product-stock">Stock: <b class="' + (p.stock < 10 ? 'low' : '') + '">' + p.stock + '</b></span>' +
+                        '<span class="product-price">$' + p.price.toFixed(2) + '</span>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function searchProducts() {
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cat = document.getElementById('categoryFilter').value;
+            let filtered = products;
+            if (cat) { filtered = filtered.filter(function(p) { return p.category === cat; }); }
+            if (q) { filtered = filtered.filter(function(p) { return p.name.toLowerCase().includes(q) || p.barcode.includes(q); }); }
+            renderProducts(filtered);
+        }
+
+        function filterByCategory() { searchProducts(); }
+
+        // ===================== CART =====================
+        function addToCart(barcode) {
+            const product = products.find(function(p) { return p.barcode === barcode; });
+            if (!product) return;
+            if (product.stock <= 0) { showToast('Producto sin stock'); soundError(); return; }
+            const existing = cart.find(function(item) { return item.barcode === barcode; });
+            if (existing) {
+                if (existing.qty < product.stock) { existing.qty++; }
+                else { showToast('Stock máximo alcanzado'); soundError(); return; }
+            } else {
+                cart.push(Object.assign({}, product, { qty: 1 }));
+            }
+            renderCart();
+            updateTotals();
+            showToast('Agregado: ' + product.name);
+            soundBeep();
+        }
+
+        function removeFromCart(barcode) {
+            cart = cart.filter(function(item) { return item.barcode !== barcode; });
+            renderCart();
+            updateTotals();
+        }
+
+        function changeQty(barcode, delta) {
+            const item = cart.find(function(i) { return i.barcode === barcode; });
+            const product = products.find(function(p) { return p.barcode === barcode; });
+            if (!item) return;
+            const newQty = item.qty + delta;
+            if (newQty <= 0) { removeFromCart(barcode); return; }
+            if (newQty > product.stock) { showToast('Stock insuficiente'); soundError(); return; }
+            item.qty = newQty;
+            renderCart();
+            updateTotals();
+            soundBeep();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const count = cart.reduce(function(sum, i) { return sum + i.qty; }, 0);
+            document.getElementById('cartCount').textContent = count + ' item' + (count !== 1 ? 's' : '');
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="empty-cart"><div class="empty-cart-icon">🛒</div>El carrito está vacío.<br>Busque y agregue productos.</div>';
+                return;
+            }
+            container.innerHTML = cart.map(function(item, idx) {
+                return '<div class="cart-item">' +
+                    '<span class="item-number">' + (idx + 1) + '</span>' +
+                    '<div class="item-info">' +
+                        '<div class="item-name">' + item.name + '</div>' +
+                        '<div class="item-unit-price">$' + item.price.toFixed(2) + ' c/u</div>' +
+                    '</div>' +
+                    '<div class="qty-controls">' +
+                        '<button class="qty-btn" onclick="changeQty(\'' + item.barcode + '\', -1)">−</button>' +
+                        '<span class="qty-value">' + item.qty + '</span>' +
+                        '<button class="qty-btn" onclick="changeQty(\'' + item.barcode + '\', 1)">+</button>' +
+                    '</div>' +
+                    '<div class="item-total">$' + (item.qty * item.price).toFixed(2) + '</div>' +
+                    '<button class="del-btn" onclick="removeFromCart(\'' + item.barcode + '\')" title="Eliminar">🗑</button>' +
+                '</div>';
+            }).join('');
+        }
+
+        // ===================== TOTALS =====================
+        function updateTotals() {
+            const subtotal = cart.reduce(function(sum, item) { return sum + (item.qty * item.price); }, 0);
+            const discountPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('discountInput').value) || 0));
+            const discountAmt = subtotal * (discountPct / 100);
+            const subtotalAfterDiscount = subtotal - discountAmt;
+            const iva = subtotalAfterDiscount * IVA_RATE;
+            const total = subtotalAfterDiscount + iva;
+            document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toFixed(2);
+            document.getElementById('discountDisplay').textContent = '-$' + discountAmt.toFixed(2);
+            document.getElementById('subtotalAfterDiscountDisplay').textContent = '$' + subtotalAfterDiscount.toFixed(2);
+            document.getElementById('ivaDisplay').textContent = '$' + iva.toFixed(2);
+            document.getElementById('totalDisplay').textContent = '$' + total.toFixed(2);
+        }
+
+        // ===================== PAYMENT MODAL =====================
+        function openPayModal() {
+            if (cart.length === 0) { showToast('El carrito está vacío'); soundError(); return; }
+            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
+            document.getElementById('modalTotal').textContent = '$' + total.toFixed(2);
+            document.getElementById('cashInput').value = '';
+            document.getElementById('changeDisplay').textContent = '$0.00';
+            document.getElementById('changeDisplay').classList.remove('negative');
+            document.getElementById('payModal').classList.add('active');
+            setTimeout(function() { document.getElementById('cashInput').focus(); }, 100);
+        }
+
+        function closePayModal() { document.getElementById('payModal').classList.remove('active'); }
+
+        function calculateChange() {
+            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
+            const cash = parseFloat(document.getElementById('cashInput').value) || 0;
+            const change = Math.max(0, cash - total);
+            const changeEl = document.getElementById('changeDisplay');
+            changeEl.textContent = '$' + change.toFixed(2);
+            if (cash >= total) { changeEl.classList.remove('negative'); }
+            else { changeEl.classList.add('negative'); }
+        }
+
+        let processingPayment = false;
+        async function processPayment() {
+            if (processingPayment) return;
+            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
+            const cash = parseFloat(document.getElementById('cashInput').value) || 0;
+            if (cash < total) { showToast('Efectivo insuficiente'); soundError(); return; }
+            processingPayment = true;
+            try {
+                const discountPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('discountInput').value) || 0));
+                const result = await api('/api/sales', {
+                    method: 'POST',
+                    body: {
+                        items: cart.map(function(i) { return { barcode: i.barcode, qty: i.qty }; }),
+                        discountPct: discountPct,
+                        cash: cash
+                    }
+                });
+                soundDing();
+                showReceipt(result.sale);
+                await loadProducts();
+                renderProducts(currentProductList());
+            } catch (e) {
+                console.error(e);
+                showToast('⚠️ ' + e.message);
+                soundError();
+            } finally {
+                processingPayment = false;
+                closePayModal();
+            }
+        }
+
+        function currentProductList() {
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cat = document.getElementById('categoryFilter').value;
+            let filtered = products;
+            if (cat) { filtered = filtered.filter(function(p) { return p.category === cat; }); }
+            if (q) { filtered = filtered.filter(function(p) { return p.name.toLowerCase().includes(q) || p.barcode.includes(q); }); }
+            return filtered;
+        }
+
+        // ===================== RECEIPT =====================
+        function showReceipt(sale) {
+            const itemsHtml = sale.items.map(function(item) {
+                return '<div class="receipt-item"><span>' + item.qty + 'x ' + item.name + '</span><span>$' + item.total.toFixed(2) + '</span></div>';
+            }).join('');
+            const ivaPct = Math.round((sale.ivaRate || IVA_RATE) * 100);
+            document.getElementById('receiptContent').innerHTML =
+                '<div class="receipt-header">' +
+                    '<div class="receipt-title">* GRUPO SAJI BOGOTA SAS *</div>' +
+                    '<div class="receipt-info">Embalaje y Desechables<br>Bogotá, Colombia</div>' +
+                '</div>' +
+                '<div class="receipt-meta">' +
+                    '<div class="receipt-meta-row"><span>Ticket:</span><span>#' + sale.ticketId + '</span></div>' +
+                    '<div class="receipt-meta-row"><span>Fecha:</span><span>' + sale.date + '</span></div>' +
+                    '<div class="receipt-meta-row"><span>Hora:</span><span>' + sale.time + '</span></div>' +
+                    '<div class="receipt-meta-row"><span>Atendió:</span><span>' + (sale.cashier || (currentUser ? currentUser.user : '-')) + '</span></div>' +
+                '</div>' +
+                '<div class="receipt-items">' + itemsHtml + '</div>' +
+                '<div class="receipt-totals">' +
+                    '<div class="receipt-total-row"><span>Subtotal:</span><span>$' + sale.subtotal.toFixed(2) + '</span></div>' +
+                    (sale.discountPct > 0 ? '<div class="receipt-total-row receipt-discount"><span>Descuento (' + sale.discountPct + '%):</span><span>-$' + sale.discountAmt.toFixed(2) + '</span></div>' : '') +
+                    '<div class="receipt-total-row"><span>Subtotal c/Desc:</span><span>$' + sale.subtotalAfterDiscount.toFixed(2) + '</span></div>' +
+                    '<div class="receipt-total-row"><span>IVA (' + ivaPct + '%):</span><span>$' + sale.iva.toFixed(2) + '</span></div>' +
+                    '<div class="receipt-grand-total"><span>TOTAL:</span><span>$' + sale.total.toFixed(2) + '</span></div>' +
+                    '<div class="receipt-total-row"><span>Efectivo:</span><span>$' + sale.cash.toFixed(2) + '</span></div>' +
+                    '<div class="receipt-total-row" style="font-weight:700; color:#2e7d32;"><span>Cambio:</span><span>$' + sale.change.toFixed(2) + '</span></div>' +
+                '</div>' +
+                '<div class="receipt-footer">' +
+                    '<div>*** GRACIAS POR SU COMPRA ***</div>' +
+                    '<div class="receipt-barcode">||||||||||||||||||</div>' +
+                '</div>';
+            lastTicketId = sale.ticketId;
+            document.getElementById('receiptModal').classList.add('active');
+        }
+
+        function closeReceipt() {
+            document.getElementById('receiptModal').classList.remove('active');
+            newTicket();
+        }
+
+        // ===================== NEW TICKET =====================
+        let lastTicketId = 0;
+        function newTicket() {
+            cart = [];
+            document.getElementById('discountInput').value = 0;
+            renderCart();
+            updateTotals();
+            renderProducts(currentProductList());
+        }
+
+        // ===================== TOAST =====================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 2200);
+        }
+
+        // ===================== LOGIN / SESIÓN =====================
+        async function doLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value;
+            if (!user || !pass) {
+                document.getElementById('loginError').textContent = 'Ingrese usuario y contraseña';
+                document.getElementById('loginError').classList.add('show');
+                return;
+            }
+            try {
+                // Login sin credenciales de sesión previa
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: user, pass: pass })
+                });
+                const data = await res.json().catch(function() { return {}; });
+                if (!res.ok) throw new Error(data.error || 'Credenciales incorrectas');
+                currentUser = { user: data.user, pass: pass, role: data.role };
+                document.getElementById('loginScreen').classList.remove('active');
+                document.getElementById('appShell').classList.add('active');
+                document.getElementById('userChipName').textContent = data.user;
+                const roleBadge = document.getElementById('userChipRole');
+                roleBadge.textContent = data.role === 'admin' ? 'Admin' : 'Vendedor';
+                document.getElementById('adminBtn').style.display = data.role === 'admin' ? '' : 'none';
+                soundDing();
+                showToast('👋 Bienvenido, ' + data.user);
+                await initAppData();
+            } catch (e) {
+                document.getElementById('loginError').textContent = 'Usuario o contraseña incorrectos';
+                document.getElementById('loginError').classList.add('show');
+                soundError();
+            }
+        }
+
+        function doLogout() {
+            if (document.getElementById('adminModal').classList.contains('active')) {
+                closeAdminPanel();
+                return;
+            }
+            currentUser = null;
+            cart = [];
+            renderCart();
+            updateTotals();
+            document.getElementById('appShell').classList.remove('active');
+            document.getElementById('loginScreen').classList.add('active');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('loginError').classList.remove('show');
+            setTimeout(function() { document.getElementById('loginUser').focus(); }, 100);
+            showToast('🔒 Sesión cerrada');
+        }
+
+        function openAdminAccess() {
+            if (!isAdmin()) { showToast('⚠️ Solo el administrador puede abrir el panel'); soundError(); return; }
+            openAdminPanel();
+        }
+
+        // ===================== ADMIN PANEL =====================
+        function openAdminPanel() {
+            if (!isAdmin()) { showToast('⚠️ Solo el administrador'); soundError(); return; }
+            setRange(currentRange);
+            renderInventory();
+            renderProductsAdmin();
+            renderUsersAdmin();
+            document.getElementById('adminModal').classList.add('active');
+        }
+
+        function closeAdminPanel() { document.getElementById('adminModal').classList.remove('active'); }
+
+        function showAdminTab(tab) {
+            const tabs = ['history', 'inventory', 'products', 'config'];
+            tabs.forEach(function(t) {
+                document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+                document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+            });
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            document.getElementById('section' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            if (tab === 'history') renderHistoryTable();
+            if (tab === 'inventory') renderInventory();
+            if (tab === 'products') renderProductsAdmin();
+            if (tab === 'config') renderUsersAdmin();
+        }
+
+        // ===================== HISTORY WITH RANGES =====================
+        let lastFilteredSales = [];
+
+        function setRange(range) {
+            currentRange = range;
+            ['Day', 'Week', 'Month', 'Year', 'All'].forEach(function(r) {
+                document.getElementById('chip' + r).classList.remove('active');
+            });
+            const map = { day: 'chipDay', week: 'chipWeek', month: 'chipMonth', year: 'chipYear', all: 'chipAll', date: null };
+            if (map[range]) document.getElementById(map[range]).classList.add('active');
+            renderHistoryTable();
+        }
+
+        function getRangeFromTo() {
+            const now = new Date();
+            const todayISO = toLocalISO(now);
+            switch (currentRange) {
+                case 'day': return { from: todayISO, to: todayISO };
+                case 'week': return { from: toLocalISO(startOfWeek(now)), to: todayISO };
+                case 'month': return { from: todayISO.substring(0, 7) + '-01', to: todayISO };
+                case 'year': return { from: todayISO.substring(0, 4) + '-01-01', to: todayISO };
+                case 'date': {
+                    const picked = document.getElementById('historyDate').value;
+                    return picked ? { from: picked, to: picked } : { from: null, to: null };
+                }
+                case 'all':
+                default: return { from: null, to: null };
+            }
+        }
+
+        function getRangeLabel() {
+            switch (currentRange) {
+                case 'day': return 'Hoy';
+                case 'week': return 'Esta Semana';
+                case 'month': return 'Este Mes';
+                case 'year': return 'Este Año';
+                case 'date': {
+                    const picked = document.getElementById('historyDate').value;
+                    return picked ? picked.split('-').reverse().join('/') : 'Fecha';
+                }
+                case 'all': return 'Todo el Historial';
+                default: return '';
+            }
+        }
+
+        async function renderHistoryTable() {
+            const body = document.getElementById('historyBody');
+            const label = getRangeLabel();
+            document.getElementById('historySummaryLabel').textContent = 'Total Vendido (' + label + '):';
+            const range = getRangeFromTo();
+            if (currentRange === 'date' && !range.from) {
+                body.innerHTML = '<div class="admin-empty">Seleccione una fecha.</div>';
+                document.getElementById('historyDayTotal').textContent = '$0.00';
+                lastFilteredSales = [];
+                return;
+            }
+            body.innerHTML = '<div class="admin-empty">Cargando...</div>';
+            try {
+                let url = '/api/sales';
+                if (range.from && range.to) url += '?from=' + range.from + '&to=' + range.to;
+                const filtered = await api(url);
+                lastFilteredSales = filtered;
+                hideServerWarning();
+                if (filtered.length === 0) {
+                    body.innerHTML = '<div class="admin-empty"><div style="font-size:2.5rem; margin-bottom:10px;">📋</div>No hay ventas en el periodo seleccionado.</div>';
+                    document.getElementById('historyDayTotal').textContent = '$0.00';
+                } else {
+                    const rows = filtered.map(function(sale) {
+                        const itemCount = sale.items.reduce(function(sum, it) { return sum + it.qty; }, 0);
+                        return '<tr>' +
+                            '<td>#' + sale.ticketId + '</td>' +
+                            '<td>' + sale.date + '</td>' +
+                            '<td>' + sale.time + '</td>' +
+                            '<td>' + (sale.cashier || '-') + '</td>' +
+                            '<td>' + itemCount + ' pza' + (itemCount !== 1 ? 's' : '') + '</td>' +
+                            '<td class="td-num">$' + sale.total.toFixed(2) + '</td>' +
+                            '<td class="td-num">$' + sale.cash.toFixed(2) + '</td>' +
+                            '<td class="td-num">$' + sale.change.toFixed(2) + '</td>' +
+                        '</tr>';
+                    }).join('');
+                    body.innerHTML = '<table class="admin-table"><thead><tr><th># Ticket</th><th>Fecha</th><th>Hora</th><th>Cajero</th><th>Artículos</th><th style="text-align:right;">Total</th><th style="text-align:right;">Efectivo</th><th style="text-align:right;">Cambio</th></tr></thead><tbody>' + rows + '</tbody></table>';
+                    const rangeTotal = filtered.reduce(function(sum, s) { return sum + s.total; }, 0);
+                    document.getElementById('historyDayTotal').textContent = '$' + rangeTotal.toFixed(2);
+                }
+            } catch (e) {
+                console.error(e);
+                body.innerHTML = '<div class="admin-empty">⚠️ ' + e.message + '</div>';
+                showServerWarning();
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm('¿Está seguro de que desea borrar TODO el historial de ventas?\n\nEsta acción no se puede deshacer.')) return;
+            if (!confirm('⚠️ CONFIRMACIÓN FINAL:\nSe eliminarán permanentemente todas las ventas guardadas en la base de datos.\n\n¿Desea continuar?')) return;
+            try {
+                await api('/api/sales', { method: 'DELETE' });
+                renderHistoryTable();
+                renderInventory();
+                showToast('🗑️ Historial borrado correctamente');
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        // ===================== INVENTORY (ADMIN) =====================
+        async function renderInventory() {
+            const body = document.getElementById('inventoryBody');
+            if (products.length === 0) {
+                body.innerHTML = '<div class="admin-empty">No hay productos registrados.</div>';
+                return;
+            }
+            let sold = {};
+            try {
+                const summary = await api('/api/inventory/summary');
+                Object.assign(sold, summary.byName);
+                Object.keys(summary.byBarcode).forEach(function(k) { sold[k] = summary.byBarcode[k]; });
+            } catch (e) {
+                body.innerHTML = '<div class="admin-empty">⚠️ ' + e.message + '</div>';
+                return;
+            }
+            let totalStockValue = 0;
+            let totalSoldValue = 0;
+            const rows = products.map(function(p) {
+                const s = sold[p.barcode] || { qty: 0, amount: 0 };
+                const stockValue = p.stock * p.price;
+                totalStockValue += stockValue;
+                totalSoldValue += s.amount;
+                return '<tr>' +
+                    '<td>' + p.emoji + '</td>' +
+                    '<td style="font-family:monospace; font-size:0.8rem; color:#888;">' + p.barcode + '</td>' +
+                    '<td style="font-weight:600;">' + p.name + '</td>' +
+                    '<td><span class="category-badge cat-' + p.category + '">' + p.category + '</span></td>' +
+                    '<td class="td-num">$' + p.price.toFixed(2) + '</td>' +
+                    '<td class="td-num">' +
+                        '<input type="number" class="stock-input" id="stock_' + p.barcode + '" value="' + p.stock + '" min="0"> ' +
+                        '<button class="btn-sm btn-sm-blue" onclick="adjustStock(\'' + p.barcode + '\')">Guardar</button>' +
+                    '</td>' +
+                    '<td class="td-num" style="font-weight:700; color:#' + (p.stock < 10 ? 'c62828' : '2e7d32') + ';">' + p.stock + '</td>' +
+                    '<td class="td-num">' + s.qty + '</td>' +
+                    '<td class="td-num" style="color:#2e7d32; font-weight:600;">$' + s.amount.toFixed(2) + '</td>' +
+                    '<td class="td-num" style="color:#004c91; font-weight:600;">$' + stockValue.toFixed(2) + '</td>' +
+                '</tr>';
+            }).join('');
+            body.innerHTML = '<table class="admin-table"><thead><tr>' +
+                '<th></th><th>Código</th><th>Producto</th><th>Categoría</th>' +
+                '<th style="text-align:right;">Precio</th><th style="text-align:right;">Ajustar Stock</th><th style="text-align:right;">Stock</th>' +
+                '<th style="text-align:right;">Vendidos</th><th style="text-align:right;">Total Vendido</th><th style="text-align:right;">Valor Inventario</th>' +
+                '</tr></thead><tbody>' + rows + '</tbody></table>' +
+                '<div class="admin-summary" style="margin-top:14px;">' +
+                    '<span class="admin-summary-label">Valor Total del Inventario: <b style="color:#004c91;">$' + totalStockValue.toFixed(2) + '</b></span>' +
+                    '<span class="admin-summary-label">Total Vendido (Histórico): <b style="color:#2e7d32;">$' + totalSoldValue.toFixed(2) + '</b></span>' +
+                '</div>';
+        }
+
+        async function adjustStock(barcode) {
+            const input = document.getElementById('stock_' + barcode);
+            if (!input) return;
+            const newStock = Math.max(0, parseInt(input.value, 10) || 0);
+            try {
+                await api('/api/products/' + barcode + '/stock', { method: 'PATCH', body: { stock: newStock } });
+                await loadProducts();
+                renderProducts(currentProductList());
+                renderInventory();
+                renderProductsAdmin();
+                const product = products.find(function(p) { return p.barcode === barcode; });
+                showToast('📦 Stock actualizado: ' + (product ? product.name : barcode) + ' → ' + newStock);
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        // ===================== PRODUCTS ADMIN (ADD/EDIT/DELETE) =====================
+        let editingBarcode = null;
+
+        function renderProductsAdmin() {
+            const body = document.getElementById('productsBody');
+            if (products.length === 0) {
+                body.innerHTML = '<div class="admin-empty">No hay productos. Agregue uno con el formulario de arriba.</div>';
+                return;
+            }
+            const rows = products.map(function(p) {
+                return '<tr>' +
+                    '<td>' + p.emoji + '</td>' +
+                    '<td style="font-family:monospace; font-size:0.8rem; color:#888;">' + p.barcode + '</td>' +
+                    '<td style="font-weight:600;">' + p.name + '</td>' +
+                    '<td><span class="category-badge cat-' + p.category + '">' + p.category + '</span></td>' +
+                    '<td class="td-num">$' + p.price.toFixed(2) + '</td>' +
+                    '<td class="td-num" style="font-weight:700; color:#' + (p.stock < 10 ? 'c62828' : '2e7d32') + ';">' + p.stock + '</td>' +
+                    '<td style="white-space:nowrap;">' +
+                        '<button class="btn-sm btn-sm-yellow" onclick="editProduct(\'' + p.barcode + '\')">✏️ Editar</button> ' +
+                        '<button class="btn-sm btn-sm-red" onclick="deleteProduct(\'' + p.barcode + '\')">🗑️</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+            body.innerHTML = '<table class="admin-table"><thead><tr>' +
+                '<th></th><th>Código</th><th>Producto</th><th>Categoría</th>' +
+                '<th style="text-align:right;">Precio</th><th style="text-align:right;">Stock</th><th>Acciones</th>' +
+                '</tr></thead><tbody>' + rows + '</tbody></table>';
+        }
+
+        async function saveProduct() {
+            const name = document.getElementById('pName').value.trim();
+            const category = document.getElementById('pCategory').value;
+            const price = parseFloat(document.getElementById('pPrice').value);
+            const stock = parseInt(document.getElementById('pStock').value, 10);
+            const emoji = document.getElementById('pEmoji').value.trim() || '📦';
+
+            if (!name) { showToast('⚠️ Ingrese el nombre del producto'); soundError(); return; }
+            if (isNaN(price) || price <= 0) { showToast('⚠️ Ingrese un precio válido'); soundError(); return; }
+            if (isNaN(stock) || stock < 0) { showToast('⚠️ Ingrese un stock válido'); soundError(); return; }
+
+            try {
+                if (editingBarcode) {
+                    await api('/api/products/' + editingBarcode, { method: 'PUT', body: { name: name, category: category, price: price, stock: stock, emoji: emoji } });
+                    showToast('✏️ Producto actualizado: ' + name);
+                } else {
+                    await api('/api/products', { method: 'POST', body: { name: name, category: category, price: price, stock: stock, emoji: emoji } });
+                    showToast('➕ Producto agregado: ' + name);
+                }
+                await loadProducts();
+                cancelEditProduct();
+                renderProducts(currentProductList());
+                renderProductsAdmin();
+                renderInventory();
+                soundBeep();
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        function editProduct(barcode) {
+            const product = products.find(function(p) { return p.barcode === barcode; });
+            if (!product) return;
+            editingBarcode = barcode;
+            document.getElementById('pName').value = product.name;
+            document.getElementById('pCategory').value = product.category;
+            document.getElementById('pPrice').value = product.price;
+            document.getElementById('pStock').value = product.stock;
+            document.getElementById('pEmoji').value = product.emoji;
+            document.getElementById('pformTitle').textContent = '✏️ Editando: ' + product.name + ' (' + barcode + ')';
+            document.getElementById('pCancelEdit').style.display = 'inline-block';
+            document.getElementById('pName').focus();
+        }
+
+        function cancelEditProduct() {
+            editingBarcode = null;
+            document.getElementById('pName').value = '';
+            document.getElementById('pCategory').value = 'Vasos';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pStock').value = '';
+            document.getElementById('pEmoji').value = '';
+            document.getElementById('pformTitle').textContent = '➕ Agregar Producto Nuevo';
+            document.getElementById('pCancelEdit').style.display = 'none';
+        }
+
+        async function deleteProduct(barcode) {
+            const product = products.find(function(p) { return p.barcode === barcode; });
+            if (!product) return;
+            if (!confirm('¿Eliminar el producto "' + product.name + '"?\n\nEsta acción no se puede deshacer.')) return;
+            try {
+                await api('/api/products/' + barcode, { method: 'DELETE' });
+                cart = cart.filter(function(item) { return item.barcode !== barcode; });
+                if (editingBarcode === barcode) cancelEditProduct();
+                await loadProducts();
+                renderCart();
+                updateTotals();
+                renderProducts(currentProductList());
+                renderProductsAdmin();
+                renderInventory();
+                showToast('🗑️ Producto eliminado: ' + product.name);
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        // ===================== CONFIG: CHANGE PASSWORD =====================
+        async function changeAdminPassword() {
+            const current = document.getElementById('cfgCurrentPass').value;
+            const newPass = document.getElementById('cfgNewPass').value;
+            try {
+                await api('/api/auth/change-password', { method: 'POST', body: { user: currentUser.user, currentPass: current, newPass: newPass } });
+                currentUser.pass = newPass;
+                document.getElementById('cfgCurrentPass').value = '';
+                document.getElementById('cfgNewPass').value = '';
+                showToast('🔑 Contraseña actualizada correctamente');
+                soundDing();
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        // ===================== CONFIG: USER MANAGEMENT =====================
+        async function renderUsersAdmin() {
+            const body = document.getElementById('usersBody');
+            if (!body) return;
+            try {
+                const users = await api('/api/admin/users');
+                const rows = users.map(function(u) {
+                    const isSelf = u.username === currentUser.user;
+                    return '<tr>' +
+                        '<td style="font-weight:600;">👤 ' + u.username + (isSelf ? ' <span style="color:#888; font-size:0.8rem;">(tú)</span>' : '') + '</td>' +
+                        '<td><span class="role-tag role-' + u.role + '">' + u.role + '</span></td>' +
+                        '<td class="td-num">' +
+                            (isSelf ? '<span style="color:#999; font-size:0.8rem;">—</span>' :
+                                '<button class="btn-sm btn-sm-red" onclick="deleteUser(\'' + u.username + '\')">🗑️ Eliminar</button>') +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+                body.innerHTML = '<table class="admin-table"><thead><tr><th>Usuario</th><th>Rol</th><th style="text-align:right;">Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
+            } catch (e) {
+                body.innerHTML = '<div class="admin-empty">⚠️ ' + e.message + '</div>';
+            }
+        }
+
+        async function createUser() {
+            const name = document.getElementById('nuName').value.trim();
+            const pass = document.getElementById('nuPass').value;
+            const role = document.getElementById('nuRole').value;
+            if (!name || !pass) { showToast('⚠️ Ingrese usuario y contraseña'); soundError(); return; }
+            try {
+                await api('/api/admin/users', { method: 'POST', body: { username: name, pass: pass, role: role } });
+                document.getElementById('nuName').value = '';
+                document.getElementById('nuPass').value = '';
+                showToast('👤 Usuario creado: ' + name.toLowerCase() + ' (' + role + ')');
+                renderUsersAdmin();
+                soundBeep();
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm('¿Eliminar al usuario "' + username + '"?\n\nYa no podrá iniciar sesión.')) return;
+            try {
+                await api('/api/admin/users/' + encodeURIComponent(username), { method: 'DELETE' });
+                showToast('🗑️ Usuario eliminado: ' + username);
+                renderUsersAdmin();
+            } catch (e) {
+                showToast('⚠️ ' + e.message);
+                soundError();
+            }
+        }
+
+        // ===================== KEYBOARD SHORTCUTS =====================
+        document.addEventListener('keydown', function(e) {
+            const inInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA');
+            if (!inInput || e.key === 'F2') {
+                if (e.key === 'F1') { e.preventDefault(); document.getElementById('searchInput').focus(); }
+                if (e.key === 'F2') { e.preventDefault(); openPayModal(); }
+                if (e.key === 'F3' && !inInput) { e.preventDefault(); newTicket(); }
+            }
+            if (e.key === 'Enter') {
+                if (document.getElementById('loginScreen').classList.contains('active')) { doLogin(); return; }
+                if (document.activeElement === document.getElementById('searchInput')) searchProducts();
+                if (document.activeElement === document.getElementById('categoryFilter')) searchProducts();
+            }
+            if (e.key === 'Escape') {
+                if (document.getElementById('payModal').classList.contains('active')) closePayModal();
+                if (document.getElementById('receiptModal').classList.contains('active')) closeReceipt();
+                if (document.getElementById('adminModal').classList.contains('active')) closeAdminPanel();
+            }
+        });
+
+        // ===================== PRINT RECEIPT =====================
+        function printReceipt() {
+            const receiptContent = document.getElementById('receiptContent').innerHTML;
+            const printWindow = window.open('', '_blank', 'width=400,height=600');
+            printWindow.document.write(
+                '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #' + lastTicketId + '</title>' +
+                '<style>' +
+                '@media print { body { margin: 0; padding: 0; } }' +
+                'body { font-family: "Courier New", Courier, "Lucida Console", monospace; font-size: 12px; line-height: 1.4; color: #222; background: #fff; margin: 0; padding: 8px 12px; max-width: 320px; }' +
+                '.receipt-header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999; }' +
+                '.receipt-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }' +
+                '.receipt-info { font-size: 10px; color: #333; line-height: 1.4; }' +
+                '.receipt-meta { border-bottom: 1px dashed #999; padding: 6px 0; margin-bottom: 8px; font-size: 11px; }' +
+                '.receipt-meta-row { display: flex; justify-content: space-between; }' +
+                '.receipt-items { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999; }' +
+                '.receipt-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 11px; }' +
+                '.receipt-totals { padding-top: 6px; font-size: 11px; }' +
+                '.receipt-total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }' +
+                '.receipt-grand-total { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; border-top: 2px dashed #999; padding-top: 6px; margin-top: 6px; margin-bottom: 4px; }' +
+                '.receipt-discount { color: #c62828; }' +
+                '.receipt-footer { text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #999; font-size: 10px; color: #555; }' +
+                '.receipt-barcode { font-family: "Courier New", monospace; font-size: 14px; letter-spacing: 2px; margin-top: 4px; }' +
+                '.no-print { display: none; }' +
+                '</style></head><body>' + receiptContent +
+                '<div class="no-print" style="margin-top:20px; text-align:center;">' +
+                '<button onclick="window.print()" style="padding:10px 20px; font-size:14px; cursor:pointer;">🖨️ Imprimir</button></div>' +
+                '<script>setTimeout(function() { window.print(); }, 300);<\/script></body></html>'
+            );
+            printWindow.document.close();
+        }
+
+        // ===================== EXPORT TO CSV =====================
+        function exportToCSV() {
+            if (!isAdmin()) { showToast('⚠️ Solo el administrador puede exportar'); soundError(); return; }
+            if (lastFilteredSales.length === 0) {
+                showToast('No hay ventas para exportar en este periodo');
+                soundError();
+                return;
+            }
+
+            let csv = '﻿'; // BOM para Excel
+            csv += 'Reporte,' + getRangeLabel() + '\n';
+            csv += 'Fecha,Hora,Ticket,Cajero,Productos,Subtotal,Descuento,IVA,Total,Efectivo,Cambio\n';
+
+            let sumSubtotal = 0, sumDiscount = 0, sumIva = 0, sumTotal = 0, sumCash = 0, sumChange = 0;
+
+            lastFilteredSales.forEach(function(sale) {
+                const productsList = sale.items.map(function(it) {
+                    return it.qty + 'x ' + it.name;
+                }).join(' | ');
+
+                csv += [
+                    sale.date,
+                    sale.time,
+                    '#' + sale.ticketId,
+                    sale.cashier || '-',
+                    '"' + productsList + '"',
+                    sale.subtotal.toFixed(2),
+                    sale.discountAmt.toFixed(2),
+                    sale.iva.toFixed(2),
+                    sale.total.toFixed(2),
+                    sale.cash.toFixed(2),
+                    sale.change.toFixed(2)
+                ].join(',') + '\n';
+
+                sumSubtotal += sale.subtotal;
+                sumDiscount += sale.discountAmt;
+                sumIva += sale.iva;
+                sumTotal += sale.total;
+                sumCash += sale.cash;
+                sumChange += sale.change;
+            });
+
+            csv += [
+                'TOTAL PERIODO',
+                '',
+                '',
+                '',
+                lastFilteredSales.length + ' ventas',
+                sumSubtotal.toFixed(2),
+                sumDiscount.toFixed(2),
+                sumIva.toFixed(2),
+                sumTotal.toFixed(2),
+                sumCash.toFixed(2),
+                sumChange.toFixed(2)
+            ].join(',') + '\n';
+
+            const filename = 'ventas_' + getRangeLabel().replace(/\s+/g, '_') + '_' + toLocalISO(new Date()) + '.csv';
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('📥 CSV exportado: ' + filename);
+        }
+
+        // ===================== INIT =====================
+        async function initAppData() {
+            try {
+                const cfg = await api('/api/config');
+                if (cfg && cfg.ivaRate) {
+                    IVA_RATE = cfg.ivaRate;
+                    document.getElementById('ivaLabel').textContent = 'IVA (' + Math.round(IVA_RATE * 100) + '%):';
+                }
+            } catch (e) { console.error('Sin config del servidor:', e); showServerWarning(); }
+            await loadProducts();
+            renderProducts(products);
+            updateTotals();
+        }
+
+        // Solo precargar salud del servidor; el app arranca tras el login
+        (async function init() {
+            try { await fetch('/api/config'); hideServerWarning(); } catch (e) {}
+            setTimeout(function() { document.getElementById('loginUser').focus(); }, 200);
+        })();
+    </script>
+</body>
+</html>
+

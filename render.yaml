@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: saji-pos
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: IVA_RATE
+        value: "0.16"
