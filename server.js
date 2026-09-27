@@ -13,6 +13,16 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ===================== TZ HELPER (America/Bogota) =====================
+const BOGOTA_TZ = process.env.APP_TZ || 'America/Bogota';
+function nowBogota() {
+    const now = new Date();
+    const isoDate = new Intl.DateTimeFormat('en-CA', { timeZone: BOGOTA_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+    const saleTime = new Intl.DateTimeFormat('es-CO', { timeZone: BOGOTA_TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(now);
+    const displayDate = new Intl.DateTimeFormat('es-CO', { timeZone: BOGOTA_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+    return { isoDate: isoDate, saleTime: saleTime, displayDate: displayDate };
+}
+
 // ===================== DB INIT =====================
 async function initDb() {
     const client = await pool.connect();
@@ -255,10 +265,10 @@ app.post('/api/sales', async (req, res) => {
         const { rows: tRows } = await client.query("UPDATE settings SET value = (COALESCE(NULLIF(value,'')::int, 1000) + 1)::text WHERE key='ticket_counter' RETURNING value");
         const ticketId = parseInt(tRows[0].value, 10);
 
-        const now = new Date();
-        const isoDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-        const saleTime = now.toLocaleTimeString('es-MX');
-        const displayDate = now.toLocaleDateString('es-MX');
+        const bogota = nowBogota();
+        const isoDate = bogota.isoDate;
+        const saleTime = bogota.saleTime;
+        const displayDate = bogota.displayDate;
 
         const { rows: sRows } = await client.query(
             'INSERT INTO sales (ticket_id, iso_date, sale_time, display_date, cashier, subtotal, discount_pct, discount_amt, iva, total, cash, change_amt) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id',
@@ -462,3 +472,4 @@ initDb()
         console.error('Error al conectar a la base de datos:', err.message);
         process.exit(1);
     });
+
