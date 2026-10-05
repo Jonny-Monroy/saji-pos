@@ -112,6 +112,7 @@
         .receipt-box { background: #fff; border-radius: 2px; width: 320px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Courier New', Courier, 'Lucida Console', monospace; }
         .receipt-content { padding: 16px 12px; background: #fff; }
         .receipt-header { text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #999; }
+        .receipt-logo { display: block; width: 130px; max-width: 85%; margin: 0 auto 8px; }
         .receipt-title { font-size: 1.1rem; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
         .receipt-info { font-size: 0.75rem; color: #333; line-height: 1.4; }
         .receipt-meta { border-bottom: 1px dashed #999; padding: 8px 0; margin-bottom: 12px; font-size: 0.8rem; color: #333; }
@@ -294,8 +295,8 @@
             <!-- TOTALS -->
             <div class="totals-section">
                 <div class="total-row">
-                    <span>Subtotal:</span>
-                    <span id="subtotalDisplay">$0.00</span>
+                    <span>Subtotal (IVA incluido):</span>
+                    <span id="subtotalDisplay">$0</span>
                 </div>
                 <div class="discount-row">
                     <span style="font-size:0.95rem; color:#555;">Descuento (%):</span>
@@ -303,19 +304,19 @@
                 </div>
                 <div class="total-row">
                     <span>Descuento:</span>
-                    <span id="discountDisplay" class="discount-display">-$0.00</span>
+                    <span id="discountDisplay" class="discount-display">-$0</span>
                 </div>
                 <div class="total-row">
-                    <span>Subtotal con Descuento:</span>
-                    <span id="subtotalAfterDiscountDisplay">$0.00</span>
+                    <span>Base sin IVA:</span>
+                    <span id="subtotalAfterDiscountDisplay">$0</span>
                 </div>
                 <div class="total-row">
-                    <span id="ivaLabel">IVA (16%):</span>
-                    <span id="ivaDisplay">$0.00</span>
+                    <span id="ivaLabel">IVA (19%) incluido:</span>
+                    <span id="ivaDisplay">$0</span>
                 </div>
                 <div class="grand-total">
                     <span class="grand-total-label">TOTAL:</span>
-                    <span class="grand-total-value" id="totalDisplay">$0.00</span>
+                    <span class="grand-total-value" id="totalDisplay">$0</span>
                 </div>
             </div>
 
@@ -554,7 +555,7 @@
         document.addEventListener('keydown', initAudio, { once: true });
 
         // ===================== API CLIENT =====================
-        let IVA_RATE = 0.16;
+        let IVA_RATE = 0.19; // Los precios de los productos YA incluyen el IVA
         let currentUser = null; // { user, pass, role }
 
         async function api(path, options) {
@@ -633,7 +634,7 @@
                     '<div class="product-name">' + p.name + '</div>' +
                     '<div class="product-footer">' +
                         '<span class="product-stock">Stock: <b class="' + (p.stock < 10 ? 'low' : '') + '">' + p.stock + '</b></span>' +
-                        '<span class="product-price">$' + p.price.toFixed(2) + '</span>' +
+                        '<span class="product-price">' + fmtCOP(p.price) + '</span>' +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -700,41 +701,48 @@
                     '<span class="item-number">' + (idx + 1) + '</span>' +
                     '<div class="item-info">' +
                         '<div class="item-name">' + item.name + '</div>' +
-                        '<div class="item-unit-price">$' + item.price.toFixed(2) + ' c/u</div>' +
+                        '<div class="item-unit-price">' + fmtCOP(item.price) + ' c/u</div>' +
                     '</div>' +
                     '<div class="qty-controls">' +
                         '<button class="qty-btn" onclick="changeQty(\'' + item.barcode + '\', -1)">−</button>' +
                         '<span class="qty-value">' + item.qty + '</span>' +
                         '<button class="qty-btn" onclick="changeQty(\'' + item.barcode + '\', 1)">+</button>' +
                     '</div>' +
-                    '<div class="item-total">$' + (item.qty * item.price).toFixed(2) + '</div>' +
+                    '<div class="item-total">' + fmtCOP(item.qty * item.price) + '</div>' +
                     '<button class="del-btn" onclick="removeFromCart(\'' + item.barcode + '\')" title="Eliminar">🗑</button>' +
                 '</div>';
             }).join('');
         }
 
+        // ===================== FORMATO DE MONEDA (COP, sin decimales) =====================
+        function fmtCOP(v) {
+            return '$' + Math.round(v).toLocaleString('es-CO');
+        }
+
         // ===================== TOTALS =====================
+        let currentTotal = 0;
         function updateTotals() {
-            const subtotal = cart.reduce(function(sum, item) { return sum + (item.qty * item.price); }, 0);
+            // Los precios YA incluyen IVA: el total es la suma de precios menos el descuento.
+            const grossTotal = cart.reduce(function(sum, item) { return sum + (item.qty * item.price); }, 0);
             const discountPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('discountInput').value) || 0));
-            const discountAmt = subtotal * (discountPct / 100);
-            const subtotalAfterDiscount = subtotal - discountAmt;
-            const iva = subtotalAfterDiscount * IVA_RATE;
-            const total = subtotalAfterDiscount + iva;
-            document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toFixed(2);
-            document.getElementById('discountDisplay').textContent = '-$' + discountAmt.toFixed(2);
-            document.getElementById('subtotalAfterDiscountDisplay').textContent = '$' + subtotalAfterDiscount.toFixed(2);
-            document.getElementById('ivaDisplay').textContent = '$' + iva.toFixed(2);
-            document.getElementById('totalDisplay').textContent = '$' + total.toFixed(2);
+            const discountAmt = grossTotal * (discountPct / 100);
+            const total = grossTotal - discountAmt;
+            const subtotal = total / (1 + IVA_RATE); // base gravable (sin IVA)
+            const iva = total - subtotal;            // IVA incluido en el precio
+            currentTotal = total;
+            document.getElementById('subtotalDisplay').textContent = fmtCOP(grossTotal);
+            document.getElementById('discountDisplay').textContent = '-' + fmtCOP(discountAmt);
+            document.getElementById('subtotalAfterDiscountDisplay').textContent = fmtCOP(subtotal);
+            document.getElementById('ivaDisplay').textContent = fmtCOP(iva);
+            document.getElementById('totalDisplay').textContent = fmtCOP(total);
         }
 
         // ===================== PAYMENT MODAL =====================
         function openPayModal() {
             if (cart.length === 0) { showToast('El carrito está vacío'); soundError(); return; }
-            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
-            document.getElementById('modalTotal').textContent = '$' + total.toFixed(2);
+            document.getElementById('modalTotal').textContent = fmtCOP(currentTotal);
             document.getElementById('cashInput').value = '';
-            document.getElementById('changeDisplay').textContent = '$0.00';
+            document.getElementById('changeDisplay').textContent = '$0';
             document.getElementById('changeDisplay').classList.remove('negative');
             document.getElementById('payModal').classList.add('active');
             setTimeout(function() { document.getElementById('cashInput').focus(); }, 100);
@@ -743,19 +751,18 @@
         function closePayModal() { document.getElementById('payModal').classList.remove('active'); }
 
         function calculateChange() {
-            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
             const cash = parseFloat(document.getElementById('cashInput').value) || 0;
-            const change = Math.max(0, cash - total);
+            const change = Math.max(0, cash - currentTotal);
             const changeEl = document.getElementById('changeDisplay');
-            changeEl.textContent = '$' + change.toFixed(2);
-            if (cash >= total) { changeEl.classList.remove('negative'); }
+            changeEl.textContent = fmtCOP(change);
+            if (cash >= currentTotal) { changeEl.classList.remove('negative'); }
             else { changeEl.classList.add('negative'); }
         }
 
         let processingPayment = false;
         async function processPayment() {
             if (processingPayment) return;
-            const total = parseFloat(document.getElementById('totalDisplay').textContent.replace('$',''));
+            const total = currentTotal;
             const cash = parseFloat(document.getElementById('cashInput').value) || 0;
             if (cash < total) { showToast('Efectivo insuficiente'); soundError(); return; }
             processingPayment = true;
@@ -795,13 +802,14 @@
         // ===================== RECEIPT =====================
         function showReceipt(sale) {
             const itemsHtml = sale.items.map(function(item) {
-                return '<div class="receipt-item"><span>' + item.qty + 'x ' + item.name + '</span><span>$' + item.total.toFixed(2) + '</span></div>';
+                return '<div class="receipt-item"><span>' + item.qty + 'x ' + item.name + '</span><span>' + fmtCOP(item.total) + '</span></div>';
             }).join('');
             const ivaPct = Math.round((sale.ivaRate || IVA_RATE) * 100);
             document.getElementById('receiptContent').innerHTML =
                 '<div class="receipt-header">' +
-                    '<div class="receipt-title">* GRUPO SAJI BOGOTA SAS *</div>' +
-                    '<div class="receipt-info">Embalaje y Desechables<br>Bogotá, Colombia</div>' +
+                    '<img class="receipt-logo" src="' + location.origin + '/SAJI_GROUP.png" alt="Logo SAJI" onerror="this.style.display=\'none\'">' +
+                    '<div class="receipt-title">GRUPO SAJI BOGOTA SAS</div>' +
+                    '<div class="receipt-info">NIT: 902.052.792-1<br>Embalaje y Desechables<br>Bogotá, Colombia</div>' +
                 '</div>' +
                 '<div class="receipt-meta">' +
                     '<div class="receipt-meta-row"><span>Ticket:</span><span>#' + sale.ticketId + '</span></div>' +
@@ -811,25 +819,37 @@
                 '</div>' +
                 '<div class="receipt-items">' + itemsHtml + '</div>' +
                 '<div class="receipt-totals">' +
-                    '<div class="receipt-total-row"><span>Subtotal:</span><span>$' + sale.subtotal.toFixed(2) + '</span></div>' +
-                    (sale.discountPct > 0 ? '<div class="receipt-total-row receipt-discount"><span>Descuento (' + sale.discountPct + '%):</span><span>-$' + sale.discountAmt.toFixed(2) + '</span></div>' : '') +
-                    '<div class="receipt-total-row"><span>Subtotal c/Desc:</span><span>$' + sale.subtotalAfterDiscount.toFixed(2) + '</span></div>' +
-                    '<div class="receipt-total-row"><span>IVA (' + ivaPct + '%):</span><span>$' + sale.iva.toFixed(2) + '</span></div>' +
-                    '<div class="receipt-grand-total"><span>TOTAL:</span><span>$' + sale.total.toFixed(2) + '</span></div>' +
-                    '<div class="receipt-total-row"><span>Efectivo:</span><span>$' + sale.cash.toFixed(2) + '</span></div>' +
-                    '<div class="receipt-total-row" style="font-weight:700; color:#2e7d32;"><span>Cambio:</span><span>$' + sale.change.toFixed(2) + '</span></div>' +
+                    '<div class="receipt-total-row"><span>Subtotal (IVA incluido):</span><span>' + fmtCOP(sale.total + sale.discountAmt) + '</span></div>' +
+                    (sale.discountPct > 0 ? '<div class="receipt-total-row receipt-discount"><span>Descuento (' + sale.discountPct + '%):</span><span>-' + fmtCOP(sale.discountAmt) + '</span></div>' : '') +
+                    '<div class="receipt-total-row"><span>Base sin IVA:</span><span>' + fmtCOP(sale.subtotal) + '</span></div>' +
+                    '<div class="receipt-total-row"><span>IVA (' + ivaPct + '%) incluido:</span><span>' + fmtCOP(sale.iva) + '</span></div>' +
+                    '<div class="receipt-grand-total"><span>TOTAL:</span><span>' + fmtCOP(sale.total) + '</span></div>' +
+                    '<div class="receipt-total-row"><span>Efectivo:</span><span>' + fmtCOP(sale.cash) + '</span></div>' +
+                    '<div class="receipt-total-row" style="font-weight:700;"><span>Cambio:</span><span>' + fmtCOP(sale.change) + '</span></div>' +
                 '</div>' +
                 '<div class="receipt-footer">' +
                     '<div>*** GRACIAS POR SU COMPRA ***</div>' +
                     '<div class="receipt-barcode">||||||||||||||||||</div>' +
                 '</div>';
             lastTicketId = sale.ticketId;
+            receiptIsReprint = false;
             document.getElementById('receiptModal').classList.add('active');
         }
 
+        let receiptIsReprint = false;
+
         function closeReceipt() {
             document.getElementById('receiptModal').classList.remove('active');
-            newTicket();
+            if (!receiptIsReprint) newTicket();
+            receiptIsReprint = false;
+        }
+
+        // Reimprimir un ticket desde el historial de ventas
+        function reprintTicket(index) {
+            const sale = lastFilteredSales[index];
+            if (!sale) { showToast('⚠️ No se encontró la venta'); return; }
+            showReceipt(sale);
+            receiptIsReprint = true;
         }
 
         // ===================== NEW TICKET =====================
@@ -1001,7 +1021,7 @@
                     body.innerHTML = '<div class="admin-empty"><div style="font-size:2.5rem; margin-bottom:10px;">📋</div>No hay ventas en el periodo seleccionado.</div>';
                     document.getElementById('historyDayTotal').textContent = '$0.00';
                 } else {
-                    const rows = filtered.map(function(sale) {
+                    const rows = filtered.map(function(sale, idx) {
                         const itemCount = sale.items.reduce(function(sum, it) { return sum + it.qty; }, 0);
                         return '<tr>' +
                             '<td>#' + sale.ticketId + '</td>' +
@@ -1009,14 +1029,15 @@
                             '<td>' + sale.time + '</td>' +
                             '<td>' + (sale.cashier || '-') + '</td>' +
                             '<td>' + itemCount + ' pza' + (itemCount !== 1 ? 's' : '') + '</td>' +
-                            '<td class="td-num">$' + sale.total.toFixed(2) + '</td>' +
-                            '<td class="td-num">$' + sale.cash.toFixed(2) + '</td>' +
-                            '<td class="td-num">$' + sale.change.toFixed(2) + '</td>' +
+                            '<td class="td-num">' + fmtCOP(sale.total) + '</td>' +
+                            '<td class="td-num">' + fmtCOP(sale.cash) + '</td>' +
+                            '<td class="td-num">' + fmtCOP(sale.change) + '</td>' +
+                            '<td style="text-align:center;"><button class="btn-sm btn-sm-blue" onclick="reprintTicket(' + idx + ')" title="Reimprimir ticket #' + sale.ticketId + '">🖨️</button></td>' +
                         '</tr>';
                     }).join('');
-                    body.innerHTML = '<table class="admin-table"><thead><tr><th># Ticket</th><th>Fecha</th><th>Hora</th><th>Cajero</th><th>Artículos</th><th style="text-align:right;">Total</th><th style="text-align:right;">Efectivo</th><th style="text-align:right;">Cambio</th></tr></thead><tbody>' + rows + '</tbody></table>';
+                    body.innerHTML = '<table class="admin-table"><thead><tr><th># Ticket</th><th>Fecha</th><th>Hora</th><th>Cajero</th><th>Artículos</th><th style="text-align:right;">Total</th><th style="text-align:right;">Efectivo</th><th style="text-align:right;">Cambio</th><th style="text-align:center;">Ticket</th></tr></thead><tbody>' + rows + '</tbody></table>';
                     const rangeTotal = filtered.reduce(function(sum, s) { return sum + s.total; }, 0);
-                    document.getElementById('historyDayTotal').textContent = '$' + rangeTotal.toFixed(2);
+                    document.getElementById('historyDayTotal').textContent = fmtCOP(rangeTotal);
                 }
             } catch (e) {
                 console.error(e);
@@ -1067,15 +1088,15 @@
                     '<td style="font-family:monospace; font-size:0.8rem; color:#888;">' + p.barcode + '</td>' +
                     '<td style="font-weight:600;">' + p.name + '</td>' +
                     '<td><span class="category-badge cat-' + p.category + '">' + p.category + '</span></td>' +
-                    '<td class="td-num">$' + p.price.toFixed(2) + '</td>' +
+                    '<td class="td-num">' + fmtCOP(p.price) + '</td>' +
                     '<td class="td-num">' +
                         '<input type="number" class="stock-input" id="stock_' + p.barcode + '" value="' + p.stock + '" min="0"> ' +
                         '<button class="btn-sm btn-sm-blue" onclick="adjustStock(\'' + p.barcode + '\')">Guardar</button>' +
                     '</td>' +
                     '<td class="td-num" style="font-weight:700; color:#' + (p.stock < 10 ? 'c62828' : '2e7d32') + ';">' + p.stock + '</td>' +
                     '<td class="td-num">' + s.qty + '</td>' +
-                    '<td class="td-num" style="color:#2e7d32; font-weight:600;">$' + s.amount.toFixed(2) + '</td>' +
-                    '<td class="td-num" style="color:#004c91; font-weight:600;">$' + stockValue.toFixed(2) + '</td>' +
+                    '<td class="td-num" style="color:#2e7d32; font-weight:600;">' + fmtCOP(s.amount) + '</td>' +
+                    '<td class="td-num" style="color:#004c91; font-weight:600;">' + fmtCOP(stockValue) + '</td>' +
                 '</tr>';
             }).join('');
             body.innerHTML = '<table class="admin-table"><thead><tr>' +
@@ -1084,8 +1105,8 @@
                 '<th style="text-align:right;">Vendidos</th><th style="text-align:right;">Total Vendido</th><th style="text-align:right;">Valor Inventario</th>' +
                 '</tr></thead><tbody>' + rows + '</tbody></table>' +
                 '<div class="admin-summary" style="margin-top:14px;">' +
-                    '<span class="admin-summary-label">Valor Total del Inventario: <b style="color:#004c91;">$' + totalStockValue.toFixed(2) + '</b></span>' +
-                    '<span class="admin-summary-label">Total Vendido (Histórico): <b style="color:#2e7d32;">$' + totalSoldValue.toFixed(2) + '</b></span>' +
+                    '<span class="admin-summary-label">Valor Total del Inventario: <b style="color:#004c91;">' + fmtCOP(totalStockValue) + '</b></span>' +
+                    '<span class="admin-summary-label">Total Vendido (Histórico): <b style="color:#2e7d32;">' + fmtCOP(totalSoldValue) + '</b></span>' +
                 '</div>';
         }
 
@@ -1122,7 +1143,7 @@
                     '<td style="font-family:monospace; font-size:0.8rem; color:#888;">' + p.barcode + '</td>' +
                     '<td style="font-weight:600;">' + p.name + '</td>' +
                     '<td><span class="category-badge cat-' + p.category + '">' + p.category + '</span></td>' +
-                    '<td class="td-num">$' + p.price.toFixed(2) + '</td>' +
+                    '<td class="td-num">' + fmtCOP(p.price) + '</td>' +
                     '<td class="td-num" style="font-weight:700; color:#' + (p.stock < 10 ? 'c62828' : '2e7d32') + ';">' + p.stock + '</td>' +
                     '<td style="white-space:nowrap;">' +
                         '<button class="btn-sm btn-sm-yellow" onclick="editProduct(\'' + p.barcode + '\')">✏️ Editar</button> ' +
@@ -1310,26 +1331,45 @@
             printWindow.document.write(
                 '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #' + lastTicketId + '</title>' +
                 '<style>' +
+                '@page { size: 52mm auto; margin: 0mm; }' +
                 '@media print { body { margin: 0; padding: 0; } }' +
-                'body { font-family: "Courier New", Courier, "Lucida Console", monospace; font-size: 12px; line-height: 1.4; color: #222; background: #fff; margin: 0; padding: 8px 12px; max-width: 320px; }' +
-                '.receipt-header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999; }' +
-                '.receipt-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }' +
-                '.receipt-info { font-size: 10px; color: #333; line-height: 1.4; }' +
-                '.receipt-meta { border-bottom: 1px dashed #999; padding: 6px 0; margin-bottom: 8px; font-size: 11px; }' +
+                'body { font-family: "Courier New", Courier, monospace; font-weight: 900; font-size: 13px; line-height: 1.3; color: #000; background: #fff; margin: 0; padding: 1mm; width: 46mm; }' +
+                '.receipt-logo { display: block; width: 24mm; max-width: 80%; margin: 0 auto 2mm; filter: grayscale(1) contrast(2.5); }' +
+                '.receipt-header { text-align: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px dashed #000; }' +
+                '.receipt-title { font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; color: #000; }' +
+                '.receipt-info { font-size: 11px; color: #000; line-height: 1.35; font-weight: 900; }' +
+                '.receipt-meta { border-bottom: 2px dashed #000; padding: 4px 0; margin-bottom: 6px; font-size: 11px; font-weight: 900; color: #000; }' +
                 '.receipt-meta-row { display: flex; justify-content: space-between; }' +
-                '.receipt-items { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #999; }' +
-                '.receipt-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 11px; }' +
-                '.receipt-totals { padding-top: 6px; font-size: 11px; }' +
-                '.receipt-total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }' +
-                '.receipt-grand-total { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; border-top: 2px dashed #999; padding-top: 6px; margin-top: 6px; margin-bottom: 4px; }' +
-                '.receipt-discount { color: #c62828; }' +
-                '.receipt-footer { text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed #999; font-size: 10px; color: #555; }' +
-                '.receipt-barcode { font-family: "Courier New", monospace; font-size: 14px; letter-spacing: 2px; margin-top: 4px; }' +
+                '.receipt-items { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px dashed #000; font-weight: 900; }' +
+                '.receipt-item { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 12px; color: #000; }' +
+                '.receipt-item span:last-child { white-space: nowrap; padding-left: 4px; }' +
+                '.receipt-totals { padding-top: 4px; font-size: 12px; font-weight: 900; }' +
+                '.receipt-total-row { display: flex; justify-content: space-between; margin-bottom: 2px; color: #000; }' +
+                '.receipt-total-row span:last-child { white-space: nowrap; padding-left: 4px; }' +
+                '.receipt-grand-total { display: flex; justify-content: space-between; font-weight: 900; font-size: 16px; border-top: 2px solid #000; padding-top: 4px; margin-top: 4px; margin-bottom: 4px; color: #000; }' +
+                '.receipt-grand-total span:last-child { white-space: nowrap; padding-left: 4px; }' +
+                '.receipt-discount { color: #000; }' +
+                '.receipt-footer { text-align: center; margin-top: 8px; padding-top: 6px; border-top: 2px dashed #000; font-size: 11px; color: #000; font-weight: 900; }' +
+                '.receipt-barcode { font-family: "Courier New", monospace; font-size: 14px; letter-spacing: 1px; margin-top: 2px; color: #000; }' +
                 '.no-print { display: none; }' +
                 '</style></head><body>' + receiptContent +
                 '<div class="no-print" style="margin-top:20px; text-align:center;">' +
                 '<button onclick="window.print()" style="padding:10px 20px; font-size:14px; cursor:pointer;">🖨️ Imprimir</button></div>' +
-                '<script>setTimeout(function() { window.print(); }, 300);<\/script></body></html>'
+                '<script>' +
+                '(function(){' +
+                    'var printed = false;' +
+                    'function doPrint(){ if (printed) return; printed = true; window.print(); }' +
+                    'var imgs = document.images;' +
+                    'if (!imgs.length) { setTimeout(doPrint, 300); return; }' +
+                    'var pending = imgs.length;' +
+                    'for (var i = 0; i < imgs.length; i++) {' +
+                        'if (imgs[i].complete) { pending--; }' +
+                        'else { imgs[i].onload = imgs[i].onerror = function(){ pending--; if (pending <= 0) setTimeout(doPrint, 150); }; }' +
+                    '}' +
+                    'if (pending <= 0) setTimeout(doPrint, 150);' +
+                    'setTimeout(doPrint, 4000);' +
+                '})();' +
+                '<\/script></body></html>'
             );
             printWindow.document.close();
         }
@@ -1411,7 +1451,7 @@
                 const cfg = await api('/api/config');
                 if (cfg && cfg.ivaRate) {
                     IVA_RATE = cfg.ivaRate;
-                    document.getElementById('ivaLabel').textContent = 'IVA (' + Math.round(IVA_RATE * 100) + '%):';
+                    document.getElementById('ivaLabel').textContent = 'IVA (' + Math.round(IVA_RATE * 100) + '%) incluido:';
                 }
             } catch (e) { console.error('Sin config del servidor:', e); showServerWarning(); }
             await loadProducts();

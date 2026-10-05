@@ -9,6 +9,6 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: IVA_RATE
-        value: "0.16"
+        value: "0.19"
       - key: TZ
         value: "America/Bogota"

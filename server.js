@@ -168,7 +168,7 @@ function requireAdmin(req, res, next) {
 
 // ===================== API: CONFIG =====================
 app.get('/api/config', (req, res) => {
-    res.json({ ivaRate: parseFloat(process.env.IVA_RATE || '0.16') });
+    res.json({ ivaRate: parseFloat(process.env.IVA_RATE || '0.19') });
 });
 
 // ===================== API: PRODUCTS =====================
@@ -238,12 +238,12 @@ app.post('/api/sales', async (req, res) => {
     if (!cashier) return res.status(401).json({ error: 'Debe iniciar sesión para vender' });
     const pct = Math.max(0, Math.min(100, parseFloat(discountPct) || 0));
     const cashNum = parseFloat(cash) || 0;
-    const ivaRate = parseFloat(process.env.IVA_RATE || '0.16');
+    const ivaRate = parseFloat(process.env.IVA_RATE || '0.19');
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        let subtotal = 0;
+        let grossTotal = 0;
         const lineItems = [];
         for (const it of items) {
             const { rows } = await client.query('SELECT * FROM products WHERE barcode=$1 FOR UPDATE', [it.barcode]);
@@ -252,13 +252,16 @@ app.post('/api/sales', async (req, res) => {
             const qty = parseInt(it.qty, 10);
             if (!qty || qty <= 0) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Cantidad inválida' }); }
             if (p.stock < qty) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Stock insuficiente: ' + p.name }); }
-            subtotal += qty * parseFloat(p.price);
+            grossTotal += qty * parseFloat(p.price);
             lineItems.push({ barcode: p.barcode, name: p.name, qty: qty, price: parseFloat(p.price), total: qty * parseFloat(p.price) });
         }
-        const discountAmt = subtotal * (pct / 100);
-        const subtotalAfterDiscount = subtotal - discountAmt;
-        const iva = subtotalAfterDiscount * ivaRate;
-        const total = subtotalAfterDiscount + iva;
+        // Los precios YA incluyen IVA: el total es la suma de precios menos el descuento.
+        // Se desglosa base gravable e IVA "incluido" sin aumentar el total.
+        const discountAmt = grossTotal * (pct / 100);
+        const total = grossTotal - discountAmt;
+        const subtotal = total / (1 + ivaRate); // base gravable (sin IVA)
+        const iva = total - subtotal;           // IVA incluido en el precio
+        const subtotalAfterDiscount = subtotal;
         if (cashNum < total) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Efectivo insuficiente' }); }
         const changeAmt = cashNum - total;
 
